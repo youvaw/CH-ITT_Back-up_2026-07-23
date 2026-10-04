@@ -27,3 +27,6 @@ dist/
 CHITT/GEMINI_API_KEY*
 yolov8n.pt
 
+
+*.db-shm
+*.db-wal
