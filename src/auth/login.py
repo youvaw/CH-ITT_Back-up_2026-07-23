@@ -1,0 +1,206 @@
+"""
+=========================================
+AetherMind - Secure User Login
+=========================================
+Project : CHITT AI Assistant
+Version : 2.1.0
+=========================================
+"""
+
+from datetime import datetime, timedelta
+
+from src.database.manager import DatabaseManager
+from src.security.password import verify_password
+
+
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_MINUTES = 5
+
+
+class Login:
+
+    def __init__(self):
+        self.db = DatabaseManager()
+
+    # =========================================
+    # Failed Attempts
+    # =========================================
+
+    def failed_attempts(self, user_id):
+
+        row = self.db.fetchone(
+            """
+            SELECT COUNT(*) AS count
+            FROM login_attempts
+            WHERE user_id = ?
+              AND success = 0
+              AND attempted_at >= datetime('now', ?)
+            """,
+            (user_id, f"-{LOCKOUT_MINUTES} minutes"),
+        )
+
+        return row["count"] if row else 0
+
+    # =========================================
+    # Check Lock
+    # =========================================
+
+    def is_locked(self, user_id):
+
+        return self.failed_attempts(user_id) >= MAX_FAILED_ATTEMPTS
+
+    # =========================================
+    # Record Attempt
+    # =========================================
+
+    def record_attempt(self, user_id, success):
+
+        self.db.execute(
+            """
+            INSERT INTO login_attempts
+            (user_id, success)
+            VALUES (?, ?)
+            """,
+            (
+                user_id,
+                1 if success else 0
+            ),
+        )
+
+        self.db.commit()
+
+    # =========================================
+    # Reset Failed Attempts
+    # =========================================
+
+    def reset_attempts(self, user_id):
+
+        self.db.execute(
+            """
+            DELETE FROM login_attempts
+            WHERE user_id = ?
+              AND success = 0
+            """,
+            (user_id,),
+        )
+
+        self.db.commit()
+
+    # =========================================
+    # Authenticate
+    # =========================================
+
+    def authenticate(self, user_id, password):
+
+        user_id = user_id.strip()
+
+        if not user_id or not password:
+            return False
+
+        # -------------------------------------
+        # Check User
+        # -------------------------------------
+
+        user = self.db.query.get_user(user_id)
+
+        if user is None:
+            return False
+
+        # -------------------------------------
+        # Check Lock
+        # -------------------------------------
+
+        if self.is_locked(user_id):
+            print("ACCOUNT LOCKED")
+            print(
+                f"Please wait {LOCKOUT_MINUTES} minutes "
+                "before trying again."
+            )
+            return False
+
+        # -------------------------------------
+        # Get Password Hash
+        # -------------------------------------
+
+        stored_hash = user["password_hash"]
+
+        if not stored_hash:
+            return False
+
+        # -------------------------------------
+        # Verify Password
+        # -------------------------------------
+
+        valid = verify_password(
+            password,
+            stored_hash
+        )
+
+        # -------------------------------------
+        # Successful Login
+        # -------------------------------------
+
+        if valid:
+
+            self.record_attempt(
+                user_id,
+                True
+            )
+
+            self.reset_attempts(user_id)
+
+            return True
+
+        # -------------------------------------
+        # Failed Login
+        # -------------------------------------
+
+        self.record_attempt(
+            user_id,
+            False
+        )
+
+        attempts = self.failed_attempts(user_id)
+
+        if attempts >= MAX_FAILED_ATTEMPTS:
+            print("ACCOUNT LOCKED")
+        else:
+            remaining = MAX_FAILED_ATTEMPTS - attempts
+            print(
+                f"LOGIN FAILED - "
+                f"{remaining} attempt(s) remaining."
+            )
+
+        return False
+
+    # =========================================
+    # Close
+    # =========================================
+
+    def close(self):
+        self.db.close()
+
+
+# =========================================
+# Test
+# =========================================
+
+if __name__ == "__main__":
+
+    login = Login()
+
+    try:
+
+        # Correct password
+        result = login.authenticate(
+            "test_user",
+            "Chitt@123"
+        )
+
+        print(
+            "LOGIN:",
+            "SUCCESS" if result else "FAILED"
+        )
+
+    finally:
+        login.close()

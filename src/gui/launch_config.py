@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+
+"""
+MYX Launch Configuration
+Development Mode
+"""
+
+DEV_MODE = True
+
+COUNTDOWN_SECONDS = 10
+
+WINDOW_TITLE = "MYX"
+
+BACKGROUND = "#050505"
+TEXT_PRIMARY = "#FFFFFF"
+TEXT_SECONDARY = "#8A8A8A"
+ACCENT = "#FFFFFF"
+
+EVENTS = {
+    10: "SYSTEM PREPARING",
+    9: "CORE INITIALIZING",
+    8: "ENVIRONMENT SCANNING",
+    7: "HARDWARE CONNECTING",
+    6: "APPLICATIONS DISCOVERING",
+    5: "STORAGE READY",
+    4: "VOICE SYSTEM READY",
+    3: "INTELLIGENCE READY",
+    2: "MYX CORE",
+    1: "",
+}
+
+AWAKENING_TEXT = "MYX IS AWAKENING"
+ONLINE_TEXT = "SYSTEM ONLINE"
+
+EVENT_DISPLAY_TIME_MS = 900
+AWAKENING_TIME_MS = 1800
+ONLINE_TIME_MS = 1200
+
+# Development Mode:
+# True  = console/debug information visible
+# False = clean launch experience
+SHOW_DEBUG = DEV_MODE

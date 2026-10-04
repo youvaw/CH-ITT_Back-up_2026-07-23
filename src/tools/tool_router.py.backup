@@ -1,0 +1,305 @@
+# -*- coding: utf-8 -*-
+
+from src.tools.system_tools import SystemTools
+
+
+class ToolRouter:
+    """
+    Local tool registry/router for MYX.
+
+    Responsibilities:
+    - Match a user command to a deterministic local tool.
+    - Execute an already-matched local tool.
+    - Never perform global action discovery.
+    - Never launch applications directly.
+    """
+
+    def __init__(self):
+        self.system_tools = SystemTools()
+
+    # ============================================================
+    # MATCH
+    # ============================================================
+
+    def match(self, command: str):
+        """
+        Identify a deterministic local tool request.
+
+        This method ONLY identifies the tool.
+        It does not execute anything.
+        """
+
+        command = str(command or "").strip().lower()
+
+        if not command:
+            return None
+
+        # --------------------------------------------------------
+        # System Health
+        # --------------------------------------------------------
+
+        if any(
+            phrase in command
+            for phrase in (
+                "system status",
+                "system health",
+                "health check",
+            )
+        ):
+            return {
+                "tool": "system",
+                "action": "health",
+                "query": command,
+            }
+
+        # --------------------------------------------------------
+        # CPU
+        # --------------------------------------------------------
+
+        if any(
+            phrase in command
+            for phrase in (
+                "cpu usage",
+                "processor usage",
+                "cpu",
+            )
+        ):
+            return {
+                "tool": "system",
+                "action": "cpu",
+                "query": command,
+            }
+
+        # --------------------------------------------------------
+        # Memory / RAM
+        # --------------------------------------------------------
+
+        if any(
+            phrase in command
+            for phrase in (
+                "ram usage",
+                "ram status",
+                "memory usage",
+                "memory status",
+                "memory",
+                "ram",
+            )
+        ):
+            return {
+                "tool": "system",
+                "action": "memory",
+                "query": command,
+            }
+
+        # --------------------------------------------------------
+        # Battery
+        # --------------------------------------------------------
+
+        if any(
+            phrase in command
+            for phrase in (
+                "battery status",
+                "battery",
+            )
+        ):
+            return {
+                "tool": "system",
+                "action": "battery",
+                "query": command,
+            }
+
+        # --------------------------------------------------------
+        # Disk / Storage
+        # --------------------------------------------------------
+
+        if any(
+            phrase in command
+            for phrase in (
+                "disk status",
+                "disk usage",
+                "storage status",
+                "storage usage",
+                "hard drive",
+                "disk",
+                "storage",
+            )
+        ):
+            return {
+                "tool": "system",
+                "action": "disk",
+                "query": command,
+            }
+
+        # --------------------------------------------------------
+        # Full System Information
+        # --------------------------------------------------------
+
+        if any(
+            phrase in command
+            for phrase in (
+                "system information",
+                "system info",
+                "computer information",
+                "computer info",
+            )
+        ):
+            return {
+                "tool": "system",
+                "action": "system_info",
+                "query": command,
+            }
+
+        return None
+
+    # ============================================================
+    # EXECUTE
+    # ============================================================
+
+    def execute(self, tool_request):
+        """
+        Execute a previously matched local tool request.
+
+        GlobalActionPipeline should call this only after
+        its safety/selection stage.
+        """
+
+        if not isinstance(tool_request, dict):
+            return {
+                "success": False,
+                "stage": "execution",
+                "message": "Invalid tool request.",
+            }
+
+        tool = str(
+            tool_request.get("tool", "")
+        ).strip().lower()
+
+        action = str(
+            tool_request.get("action", "")
+        ).strip().lower()
+
+        if tool != "system":
+            return {
+                "success": False,
+                "stage": "execution",
+                "message": f"Unknown local tool: {tool}",
+            }
+
+        methods = {
+            "health": self.system_tools.health,
+            "cpu": self.system_tools.cpu,
+            "memory": self.system_tools.memory,
+            "battery": self.system_tools.battery,
+            "disk": self.system_tools.disk,
+            "system_info": self.system_tools.system_info,
+        }
+
+        method = methods.get(action)
+
+        if method is None:
+            return {
+                "success": False,
+                "stage": "execution",
+                "tool": tool,
+                "action": action,
+                "message": f"Unknown system action: {action}",
+            }
+
+        try:
+            data = method()
+
+            return {
+                "success": True,
+                "stage": "execution",
+                "tool": tool,
+                "action": action,
+                "data": data,
+            }
+
+        except Exception as exc:
+            return {
+                "success": False,
+                "stage": "execution",
+                "tool": tool,
+                "action": action,
+                "message": str(exc),
+            }
+
+    # ============================================================
+    # COMPATIBILITY PROCESS
+    # ============================================================
+
+    def process(self, command: str):
+        """
+        Compatibility wrapper.
+
+        Match first, then execute.
+        """
+
+        request = self.match(command)
+
+        if request is None:
+            return {
+                "success": False,
+                "stage": "matching",
+                "tool": None,
+                "action": None,
+                "message": "No matching local tool found.",
+            }
+
+        return self.execute(request)
+
+
+# ================================================================
+# STANDALONE TEST
+# ================================================================
+
+if __name__ == "__main__":
+
+    print("=" * 60)
+    print("MYX TOOL ROUTER TEST")
+    print("=" * 60)
+
+    router = ToolRouter()
+
+    tests = [
+        "system status",
+        "cpu usage",
+        "memory status",
+        "battery status",
+        "disk status",
+        "system information",
+    ]
+
+    all_passed = True
+
+    for command in tests:
+
+        print()
+        print("COMMAND:", command)
+
+        request = router.match(command)
+
+        print("MATCH :", request)
+
+        if request is None:
+            print("RESULT: FAIL")
+            all_passed = False
+            continue
+
+        result = router.execute(request)
+
+        print("RESULT:", result)
+
+        if not result.get("success", False):
+            all_passed = False
+
+    print()
+
+    if all_passed:
+        print("TOOL ROUTER : PASS")
+    else:
+        print("TOOL ROUTER : FAIL")
+
+    print("=" * 60)
+    

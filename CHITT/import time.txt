@@ -1,0 +1,111 @@
+import time
+import wave
+import tempfile
+
+import numpy as np
+import sounddevice as sd
+from openwakeword.model import Model
+from faster_whisper import WhisperModel
+
+
+MIC_DEVICE = 1
+SAMPLE_RATE = 16000
+WAKE_SECONDS = 20
+COMMAND_SECONDS = 5
+
+
+print("Loading wake-word model...")
+wake_model = Model(
+    wakeword_models=["hey_jarvis"],
+    inference_framework="onnx"
+)
+
+print("Loading Whisper...")
+whisper_model = WhisperModel(
+    "tiny",
+    device="cpu",
+    compute_type="int8"
+)
+
+print()
+print("================================")
+print("CHITT NEW VOICE PIPELINE")
+print("================================")
+print("Say: HEY JARVIS")
+print()
+
+
+def record_command():
+    print("CHITT: I'm listening...")
+
+    audio = sd.rec(
+        int(SAMPLE_RATE * COMMAND_SECONDS),
+        samplerate=SAMPLE_RATE,
+        channels=1,
+        dtype="int16",
+        device=MIC_DEVICE
+    )
+
+    sd.wait()
+
+    filename = tempfile.mktemp(suffix=".wav")
+
+    with wave.open(filename, "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(SAMPLE_RATE)
+        wav.writeframes(audio.tobytes())
+
+    print("Recognizing...")
+
+    segments, _ = whisper_model.transcribe(
+        filename,
+        language="en"
+    )
+
+    text = " ".join(
+        segment.text.strip()
+        for segment in segments
+    ).strip()
+
+    return text
+
+
+def wake_callback(indata, frames, time_info, status):
+
+    audio = (indata[:, 0] * 32767).astype(np.int16)
+
+    scores = wake_model.predict(audio)
+
+    score = scores.get("hey_jarvis", 0)
+
+    if score > 0.5:
+
+        print()
+        print(f"WAKE WORD DETECTED! score={score:.3f}")
+
+        command = record_command()
+
+        print("You:", command)
+        print()
+
+        raise KeyboardInterrupt
+
+
+try:
+
+    with sd.InputStream(
+        samplerate=SAMPLE_RATE,
+        channels=1,
+        dtype="float32",
+        blocksize=1280,
+        device=MIC_DEVICE,
+        callback=wake_callback
+    ):
+
+        while True:
+            time.sleep(0.1)
+
+except KeyboardInterrupt:
+
+    print("CHITT voice test finished.")

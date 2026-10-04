@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CHITT Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+
+</head>
+
+<body>
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <h1>CHITT</h1>
+
+            <span>AI Assistant</span>
+
+        </div>
+
+        <div class="status">
+
+            <span
+                id="status-indicator"
+                class="indicator"
+            ></span>
+
+            <span id="status-text">
+                Connecting...
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <main class="dashboard">
+
+        <!-- Chat -->
+
+        <section class="card chat-card">
+
+            <h2>💬 Chat</h2>
+
+            <div
+                id="chat-output"
+                class="chat-output"
+            >
+                <div class="message system">
+                    Welcome to CHITT.
+                </div>
+            </div>
+
+            <div class="chat-input">
+
+                <input
+                    id="chat-input"
+                    type="text"
+                    placeholder="Type a message..."
+                    autocomplete="off"
+                >
+
+                <button
+                    id="send-button"
+                    type="button"
+                >
+                    Send
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- Voice -->
+
+        <section class="card">
+
+            <h2>🎤 Voice</h2>
+
+            <p id="voice-status">
+                Voice system ready
+            </p>
+
+            <button
+                id="voice-button"
+                type="button"
+            >
+                Start Voice
+            </button>
+
+        </section>
+
+
+        <!-- Vision -->
+
+        <section class="card">
+
+            <h2>👁️ Vision</h2>
+
+            <p>
+                Vision system
+            </p>
+
+            <span class="badge">
+                Available
+            </span>
+
+        </section>
+
+
+        <!-- Memory -->
+
+        <section class="card">
+
+            <h2>🧠 Memory</h2>
+
+            <p id="memory-status">
+                Memory system ready
+            </p>
+
+            <button
+                id="memory-button"
+                type="button"
+            >
+                Open Memory
+            </button>
+
+        </section>
+
+
+        <!-- Automation -->
+
+        <section class="card">
+
+            <h2>⚙️ Automation</h2>
+
+            <p>
+                Automation system
+            </p>
+
+            <span class="badge">
+                Available
+            </span>
+
+        </section>
+
+
+        <!-- System -->
+
+        <section class="card">
+
+            <h2>📊 System</h2>
+
+            <div class="system-info">
+
+                <p>
+                    API:
+                    <strong id="api-status">
+                        Checking...
+                    </strong>
+                </p>
+
+                <p>
+                    Dashboard:
+                    <strong>
+                        Online
+                    </strong>
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+
+        <span>
+            CHITT AI Assistant
+        </span>
+
+        <span>
+            Version 1.0.0
+        </span>
+
+    </footer>
+
+
+    <script
+        src="/static/app.js"
+    ></script>
+
+</body>
+
+</html>

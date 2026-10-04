@@ -11,7 +11,7 @@ try:
     _speech_available = True
     recognizer = sr.Recognizer()
 except Exception:
-    _speech_available = False
+    _speech_available = False 
     recognizer = None
 
 try:
@@ -52,24 +52,31 @@ def take_command():
         except EOFError:
             return ""
 
-    with sr.Microphone() as source:
-        print("Listening...")
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-        try:
-            audio = recognizer.listen(source, timeout=10, phrase_time_limit=15)
-        except Exception as e:
-            print("Listening error:", e)
-            return ""
+    try:
+        with sr.Microphone(device_index=1) as source:
+            print("Listening...")
+            recognizer.adjust_for_ambient_noise(source, duration=1)
 
-    for language in ("en-IN", "hi-IN", "mr-IN"):
-        try:
-            text = recognizer.recognize_google(audio, language=language)
-            if text:
-                return text
-        except Exception:
-            pass
+            try:
+                audio = recognizer.listen(source, timeout=30, phrase_time_limit=20)
+            except Exception as e:
+                print("Listening error:", e)
+                return ""
+            
 
-    return ""
+        for language in ("en-IN", "hi-IN", "mr-IN"):
+            try:
+                text = recognizer.recognize_google(audio, language=language)
+                if text:
+                    return text
+            except Exception:
+                pass
+
+        return ""
+
+    except Exception as e:
+        print("Microphone error:", e)
+        return ""
 
 
 def get_system_info():
@@ -122,6 +129,42 @@ def get_system_info():
         info["GPU"] = "Not Available"
 
     return info
+
+try:
+    module = None
+    try:
+        if __package__:
+            module = importlib.import_module(".commands.command_router", package=__package__)
+        else:
+            try:
+                module = importlib.import_module("commands.command_router")
+            except ModuleNotFoundError:
+                module = importlib.import_module("command_router")
+    except Exception:
+        module = None
+
+    if module is not None:
+        _CommandRouter = getattr(module, "CommandRouter", None)
+        if _CommandRouter is None:
+            raise AttributeError("CommandRouter was not exported by the command router module")
+    else:
+        raise ImportError("Unable to import command_router")
+except Exception:
+    class _FallbackCommandRouter:
+        def execute(self, command):
+            return False
+
+    _CommandRouter = _FallbackCommandRouter
+
+router = _CommandRouter()
+command = take_command()
+if command:
+    execute_command = getattr(router, "execute", None)
+    if callable(execute_command):
+        if not execute_command(command):
+            speak("Sorry, I don't know that command yet.")
+    else:
+        speak("Sorry, I don't know that command yet.")
 
 
 def open_google():
@@ -1016,6 +1059,7 @@ def get_brain():
     if _brain is None:
         _brain = CHITTCore()
     return _brain
+result = get_brain().process(command)  
 
 def process_command(command, speak):
 
@@ -1093,6 +1137,11 @@ class SchedulerEngine:
         thread.daemon = True
 
         thread.start()
+from src.core.startup import start
+
+if __name__ == "__main__":
+    start()
+            
 
 scheduler = SchedulerEngine()
 
@@ -4438,6 +4487,122 @@ while True:
 
     voice.speak(result["response"])
      
+"""
+=========================================
+CHITT - Main AI Engine
+=========================================
+Author  : AVISHKAR
+Project : CHITT AI Assistant
+Version : 1.0.0
+=========================================
+"""
 
+from brain.brain_manager import BrainManager
+from memory.memory_manager import MemoryManager
+from voice.voice_manager import VoiceManager
+from settings.settings_manager import SettingsManager
+
+
+class CHITT:
+
+    def __init__(self):
+
+        self.brain = BrainManager()
+
+        self.memory = MemoryManager()
+
+        self.voice = VoiceManager()
+
+        self.settings = SettingsManager()
+
+        self.running = False
+
+    # ---------------------------------
+    # Start
+    # ---------------------------------
+
+    def start(self):
+
+        self.running = True
+
+        print("\n==========================")
+
+        print(" CHITT AI Started ")
+
+        print("==========================\n")
+
+        self.voice.start()
+
+    # ---------------------------------
+    # Stop
+    # ---------------------------------
+
+    def stop(self):
+
+        self.running = False
+
+        self.voice.stop()
+
+        print("CHITT Stopped.")
+
+    # ---------------------------------
+    # Listen
+    # ---------------------------------
+
+    def listen(self):
+
+        return self.voice.listen()
+
+    # ---------------------------------
+    # Speak
+    # ---------------------------------
+
+    def speak(self, text):
+
+        self.voice.speak(text)
+
+    # ---------------------------------
+    # Process Command
+    # ---------------------------------
+
+    def process(self):
+
+        command = self.listen()
+
+        if command:
+
+            response = self.brain.process(command)
+
+            self.memory.save(command)
+
+            self.speak(response)
+
+    # ---------------------------------
+    # Main Loop
+    # ---------------------------------
+
+    def run(self):
+
+        self.start()
+
+        while self.running:
+
+            self.process()
+
+
+if __name__ == "__main__":
+
+    ai = CHITT()
+
+    ai.run()
+from src.core.startup import start
+
+if __name__ == "__main__":
+    start()
+from src.core.startup import start
+
+if __name__ == "__main__":
+    start()
+            
     
 

@@ -1,3 +1,0 @@
-"""
-CHITT AI Package
-"""
