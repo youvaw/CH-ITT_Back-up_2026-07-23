@@ -1,0 +1,7 @@
+{
+    "editor.formatOnSave": false,
+    "files.autoSave": "afterDelay",
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.fontSize": 15,
+    "chat.agent.maxRequests": 350
+}
